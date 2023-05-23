@@ -59,7 +59,7 @@ public class Main {
             for (String name : names) {
                 preparedStatement.setString(1, name);
                 preparedStatement.setString(2, "lastname");
-                preparedStatement.executeUpdate();  //todo convert to batch
+                preparedStatement.executeUpdate();  //todo convert to batch, //todo show mssql settings
             }
         } catch (SQLException e) {
             throw new RuntimeException(e);
