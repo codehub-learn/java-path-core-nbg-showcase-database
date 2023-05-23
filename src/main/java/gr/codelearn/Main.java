@@ -5,6 +5,8 @@ import org.h2.tools.Server;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
+
 import static org.h2.tools.Server.startWebServer;
 
 public class Main {
@@ -18,6 +20,7 @@ public class Main {
         try (Connection connection = DataSource.getConnection()){
             //main.createTable();
             main.insertData();
+            main.insertMultipleData(List.of("ioa", "nikos", "manolis"));
             main.selectData();
         } catch (SQLException e) {
             throw new RuntimeException(e);
@@ -31,8 +34,9 @@ public class Main {
             ResultSet resultSet = statement.executeQuery(sql);){
             while (resultSet.next()){
                 int id = resultSet.getInt("id");
-                String name = resultSet.getString("name");
-                System.out.println(id + ", " + name);
+                String firstname = resultSet.getString("firstname");
+                String lastname = resultSet.getString("lastname");
+                System.out.println(id + ", " + firstname + ", " + lastname);
             }
         } catch (SQLException e) {
             throw new RuntimeException(e);
@@ -41,7 +45,7 @@ public class Main {
 
     private void insertData() {
         try(Statement statement = DataSource.getConnection().createStatement()){
-            String sql = "INSERT INTO TEST (NAME) VALUES ('ioannis')";
+            String sql = "INSERT INTO TEST (FIRSTNAME, LASTNAME) VALUES ('ioannis', 'dan')";
             int i = statement.executeUpdate(sql);
             System.out.println(i);
         } catch (SQLException e) {
@@ -49,9 +53,22 @@ public class Main {
         }
     }
 
+    private void insertMultipleData(List<String> names){
+        String sql = "INSERT INTO TEST (FIRSTNAME, LASTNAME) VALUES (?, ?)";
+        try(PreparedStatement preparedStatement = DataSource.getConnection().prepareStatement(sql)){
+            for (String name : names) {
+                preparedStatement.setString(1, name);
+                preparedStatement.setString(2, "lastname");
+                preparedStatement.executeUpdate();  //todo convert to batch
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     private void createTable(){
         try (Statement statement = DataSource.getConnection().createStatement()){
-            String sql = "CREATE TABLE TEST (ID BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY, NAME VARCHAR(50))";
+            String sql = "CREATE TABLE TEST (ID BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY, FIRSTNAME VARCHAR(50), LASTNAME VARCHAR(50))";
             int i = statement.executeUpdate(sql);
             System.out.println(i);
         } catch (SQLException e) {
