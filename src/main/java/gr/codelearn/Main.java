@@ -8,6 +8,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Iterator;
+import static org.h2.tools.Server.startWebServer;
 
 public class Main {
 
@@ -16,21 +17,28 @@ public class Main {
     public static void main(String[] args) {
         Main main = new Main();
         main.startH2Server();
-        main.loadJDBCDriver();
-        main.getConnection();
+        DataSource.loadJDBCDriver();
+        try (Connection connection = DataSource.getConnection()){
+            main.createTable();
+            main.insertData();
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
         main.stopH2Server();
-
     }
 
-    private final String CONNECTION_FILE = "jdbc:h2:~/.h2/sample";
-    private final String CONNECTION_MEMORY = "jdbc:h2:mem:sample";
+    private void insertData() {
+        try(Statement statement = DataSource.getConnection().createStatement()){
+            String sql = "INSERT INTO TEST (NAME) VALUES ('ioannis')";
+            int i = statement.executeUpdate(sql);
+            System.out.println(i);
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
-    private final String DB_USER = "sa";
-    private final String DB_PASSWORD = "";
-
-    private void getConnection(){
-        try (Connection connection = DriverManager.getConnection(CONNECTION_MEMORY, DB_USER, DB_PASSWORD);
-             Statement statement = connection.createStatement()){
+    private void createTable(){
+        try (Statement statement = DataSource.getConnection().createStatement()){
             String sql = "CREATE TABLE TEST (ID BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY, NAME VARCHAR(50))";
             int i = statement.executeUpdate(sql);
             System.out.println(i);
@@ -39,21 +47,12 @@ public class Main {
         }
     }
 
-    private void loadJDBCDriver(){
-        //org.h2.Driver.load(); //2nd way to load driver
-        try {
-            Class.forName("org.h2.Driver");
-        } catch (ClassNotFoundException e) {
-            System.out.println("Could not load driver");
-            System.exit(-1);
-        }
-    }
-
     private void startH2Server(){
         try {
             System.out.println("Starting H2 Server.");
             this.server = Server.createTcpServer();
             server.start();
+            //startWebServer(connection);
         } catch (SQLException e) {
             System.out.println("Could not start server");
             System.exit(-1);
