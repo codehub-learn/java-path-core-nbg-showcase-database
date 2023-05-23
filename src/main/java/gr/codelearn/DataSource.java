@@ -15,7 +15,7 @@ public class DataSource {
 
     public static Connection getConnection() throws SQLException {
        if(connection == null){
-           connection = DriverManager.getConnection(CONNECTION_MEMORY, DB_USER, DB_PASSWORD);
+           connection = DriverManager.getConnection(CONNECTION_FILE, DB_USER, DB_PASSWORD);
        }
        return connection;
     }

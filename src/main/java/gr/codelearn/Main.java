@@ -2,10 +2,7 @@ package gr.codelearn;
 
 import org.h2.tools.Server;
 
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.SQLException;
-import java.sql.Statement;
+import java.sql.*;
 import java.util.ArrayList;
 import java.util.Iterator;
 import static org.h2.tools.Server.startWebServer;
@@ -19,12 +16,27 @@ public class Main {
         main.startH2Server();
         DataSource.loadJDBCDriver();
         try (Connection connection = DataSource.getConnection()){
-            main.createTable();
+            //main.createTable();
             main.insertData();
+            main.selectData();
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
         main.stopH2Server();
+    }
+
+    private void selectData(){
+        String sql = "SELECT * FROM TEST";
+        try(Statement statement = DataSource.getConnection().createStatement();
+            ResultSet resultSet = statement.executeQuery(sql);){
+            while (resultSet.next()){
+                int id = resultSet.getInt("id");
+                String name = resultSet.getString("name");
+                System.out.println(id + ", " + name);
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private void insertData() {
