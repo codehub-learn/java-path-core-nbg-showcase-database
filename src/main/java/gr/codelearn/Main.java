@@ -2,7 +2,10 @@ package gr.codelearn;
 
 import org.h2.tools.Server;
 
+import java.sql.Connection;
+import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Iterator;
 
@@ -14,11 +17,30 @@ public class Main {
         Main main = new Main();
         main.startH2Server();
         main.loadJDBCDriver();
+        main.getConnection();
         main.stopH2Server();
 
     }
 
+    private final String CONNECTION_FILE = "jdbc:h2:~/.h2/sample";
+    private final String CONNECTION_MEMORY = "jdbc:h2:mem:sample";
+
+    private final String DB_USER = "sa";
+    private final String DB_PASSWORD = "";
+
+    private void getConnection(){
+        try (Connection connection = DriverManager.getConnection(CONNECTION_MEMORY, DB_USER, DB_PASSWORD);
+             Statement statement = connection.createStatement()){
+            String sql = "CREATE TABLE TEST (ID BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY, NAME VARCHAR(50))";
+            int i = statement.executeUpdate(sql);
+            System.out.println(i);
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     private void loadJDBCDriver(){
+        //org.h2.Driver.load(); //2nd way to load driver
         try {
             Class.forName("org.h2.Driver");
         } catch (ClassNotFoundException e) {
