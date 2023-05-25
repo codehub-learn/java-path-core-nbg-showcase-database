@@ -1,13 +1,13 @@
 package gr.codelearn;
 
+import gr.codelearn.model.Test;
 import org.h2.tools.Server;
 
 import java.sql.*;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
-
-import static org.h2.tools.Server.startWebServer;
 
 public class Main {
 
@@ -17,22 +17,25 @@ public class Main {
         Main main = new Main();
         main.startH2Server();
         DataSource.loadJDBCDriver();
-        try (Connection connection = DataSource.getConnection()){
+        try (Connection connection = DataSource.getConnection()) {
             //main.createTable();
-            main.insertData();
-            main.insertMultipleData(List.of("ioa", "nikos", "manolis"));
-            main.selectData();
+            //main.insertData();
+            //main.insertMultipleData(List.of("ioa", "nikos", "manolis"));
+            Test builtTest = Test.builder().firstname("Nikoleta").lastname("Nikol").build();
+            main.insertDataV2(builtTest);
+            System.out.println(builtTest);
+            //main.selectData();
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
         main.stopH2Server();
     }
 
-    private void selectData(){
+    private void selectData() {
         String sql = "SELECT * FROM TEST";
-        try(Statement statement = DataSource.getConnection().createStatement();
-            ResultSet resultSet = statement.executeQuery(sql);){
-            while (resultSet.next()){
+        try (Statement statement = DataSource.getConnection().createStatement();
+             ResultSet resultSet = statement.executeQuery(sql);) {
+            while (resultSet.next()) {
                 int id = resultSet.getInt("id");
                 String firstname = resultSet.getString("firstname");
                 String lastname = resultSet.getString("lastname");
@@ -44,7 +47,7 @@ public class Main {
     }
 
     private void insertData() {
-        try(Statement statement = DataSource.getConnection().createStatement()){
+        try (Statement statement = DataSource.getConnection().createStatement()) {
             String sql = "INSERT INTO TEST (FIRSTNAME, LASTNAME) VALUES ('ioannis', 'dan')";
             int i = statement.executeUpdate(sql);
             System.out.println(i);
@@ -53,21 +56,41 @@ public class Main {
         }
     }
 
-    private void insertMultipleData(List<String> names){
+    private void insertMultipleData(List<String> names) {
         String sql = "INSERT INTO TEST (FIRSTNAME, LASTNAME) VALUES (?, ?)";
-        try(PreparedStatement preparedStatement = DataSource.getConnection().prepareStatement(sql)){
+        try (PreparedStatement preparedStatement = DataSource.getConnection().prepareStatement(sql)) {
             for (String name : names) {
                 preparedStatement.setString(1, name);
                 preparedStatement.setString(2, "lastname");
-                preparedStatement.executeUpdate();  //todo convert to batch, //todo show mssql settings
+                preparedStatement.addBatch();
+                preparedStatement.clearParameters();
             }
+            int[] ints = preparedStatement.executeBatch();
+            System.out.println(Arrays.toString(ints));
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
     }
 
-    private void createTable(){
-        try (Statement statement = DataSource.getConnection().createStatement()){
+    private void insertDataV2(Test test) {
+        String sql = "INSERT INTO TEST (FIRSTNAME, LASTNAME) VALUES (?, ?)";
+        try (PreparedStatement preparedStatement = DataSource.getConnection().prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+            preparedStatement.setString(1, test.getFirstname());
+            preparedStatement.setString(2, test.getLastname());
+            int i = preparedStatement.executeUpdate();
+            System.out.println("Result of adding test object:" + i);
+
+            ResultSet generatedKeys = preparedStatement.getGeneratedKeys();
+            generatedKeys.next();
+            System.out.println(generatedKeys.getLong(1));
+            test.setId(generatedKeys.getLong(1));
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private void createTable() {
+        try (Statement statement = DataSource.getConnection().createStatement()) {
             String sql = "CREATE TABLE TEST (ID BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY, FIRSTNAME VARCHAR(50), LASTNAME VARCHAR(50))";
             int i = statement.executeUpdate(sql);
             System.out.println(i);
@@ -76,7 +99,7 @@ public class Main {
         }
     }
 
-    private void startH2Server(){
+    private void startH2Server() {
         try {
             System.out.println("Starting H2 Server.");
             this.server = Server.createTcpServer();
@@ -88,14 +111,14 @@ public class Main {
         }
     }
 
-    private void stopH2Server(){
-        if(server.isRunning(true)){
+    private void stopH2Server() {
+        if (server.isRunning(true)) {
             System.out.println("Stopping H2 Server.");
             server.stop();
         }
     }
 
-    private void iteratorShowcase(){
+    private void iteratorShowcase() {
         ArrayList<Integer> integers = new ArrayList<>();
         integers.add(1);
         integers.add(2);
@@ -103,7 +126,7 @@ public class Main {
         integers.add(4);
 
         Iterator<Integer> iterator = integers.iterator();
-        while(iterator.hasNext()){
+        while (iterator.hasNext()) {
             Integer next = iterator.next();
             System.out.println(next);
         }
